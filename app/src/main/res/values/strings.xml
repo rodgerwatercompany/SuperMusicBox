@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">播放背景音樂和Audio Focus</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+</resources>
