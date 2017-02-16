@@ -174,6 +174,7 @@ public class MediaPlayerService extends Service implements OnPreparedListener, O
                 Log.v("SuperMusicBox","AUDIOFOCUS_GAIN");
                 mMediaPlayer.setVolume(0.8f, 0.8f);
                 mMediaPlayer.start();
+                mMediaPlayer.setLooping(true);
                 break;
             case AudioManager.AUDIOFOCUS_LOSS:
 
