@@ -19,7 +19,7 @@ import android.widget.Toast;
 import android.util.Log;
 
 /**
- * Created by rebor on 2017/2/7.
+ * Created by reborn on 2017/2/7.
  */
 
 public class MediaPlayerService extends Service implements OnPreparedListener, OnErrorListener, OnCompletionListener ,OnAudioFocusChangeListener {
@@ -27,16 +27,16 @@ public class MediaPlayerService extends Service implements OnPreparedListener, O
     public static final String
     ACTION_PLAY = "tw.android.mediaplayer.action.PLAY";
 
-
-
     public static final String ACTION_PAUSE = "tw.android.mediaplayer.actionl.PAUSE";
     public static final String ACTION_SET_REPEAT = "tw.android.mediaplayer.action.SET_REPEAT";
 
     private MediaPlayer mMediaPlayer = null;
 
-    private boolean mbIsInitial = true,
-    mbAudioFileFound = false,
-    mbIsRepeat = false;
+    private boolean mbIsInitial = true;
+
+    // 0 : none , 1 : Loop one , 2 : Loop all.
+    private int iRepeatType = 0;
+
 
 
     @Override
@@ -46,18 +46,6 @@ public class MediaPlayerService extends Service implements OnPreparedListener, O
         Log.v("SuperMusicBox","onCreat 0");
         mMediaPlayer = new MediaPlayer();
 
-        Uri uri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.butterflies);
-
-        Log.v("SuperMusicBox","onCreat 1");
-        try {
-
-            mMediaPlayer.setDataSource(this,uri);
-            Log.v("SuperMusicBox","onCreat 2");
-        }catch (Exception e) {
-
-            Toast.makeText(MediaPlayerService.this,"Music files are wrong!",Toast.LENGTH_LONG).show();
-        }
-
         mMediaPlayer.setOnPreparedListener(this);
         mMediaPlayer.setOnErrorListener(this);
         mMediaPlayer.setOnCompletionListener(this);
@@ -66,6 +54,8 @@ public class MediaPlayerService extends Service implements OnPreparedListener, O
     @Override
     public void onDestroy() {
         super.onDestroy();
+
+        Log.v("SuperMusicBox","onDestroy");
 
         mMediaPlayer.release();
         mMediaPlayer = null;
@@ -81,23 +71,31 @@ public class MediaPlayerService extends Service implements OnPreparedListener, O
             if (mbIsInitial) {
 
                 Log.v("SuperMusicBox","onStartCommand  1");
-                mMediaPlayer.prepareAsync();
+
+                startPlay();
                 mbIsInitial = false;
 
                 Log.v("SuperMusicBox","onStartCommand  2");
             }else {
 
                 Log.v("SuperMusicBox","onStartCommand  3");
-                mMediaPlayer.start();
+                startPlay();
                 Log.v("SuperMusicBox","onStartCommand 4");
             }
         }else if (intent.getAction().equals(ACTION_PAUSE)) {
             mMediaPlayer.pause();
         }else if (intent.getAction().equals(ACTION_SET_REPEAT)) {
 
-            mbIsRepeat = !mbIsRepeat;
-            Log.v("SuperMusicBox","setLooping " + mbIsRepeat);
-            mMediaPlayer.setLooping(mbIsRepeat);
+            iRepeatType++;
+            if (iRepeatType >= 3)
+                iRepeatType = 0;
+
+            if (iRepeatType == 1)
+                mMediaPlayer.setLooping(true);
+            else
+                mMediaPlayer.setLooping(false);
+
+            Log.v("SuperMusicBox","loop " + mMediaPlayer.isLooping());
         }
         return super.onStartCommand(intent, flags, startId);
     }
@@ -107,13 +105,14 @@ public class MediaPlayerService extends Service implements OnPreparedListener, O
         return null;
     }
 
+
+    // Called when the end of a media source is reached during playback.
+    // mp :	MediaPlayer: the MediaPlayer that reached the end of the file
     @Override
     public void onCompletion(MediaPlayer mp) {
 
-
         Log.v("SuperMusicBox","onCompletion 0");
-        mMediaPlayer.release();
-        mMediaPlayer = null;
+        Log.v("SuperMusicBox","mp " + mp.isLooping());
 
         stopForeground(true);
         mbIsInitial = true;
@@ -174,7 +173,6 @@ public class MediaPlayerService extends Service implements OnPreparedListener, O
                 Log.v("SuperMusicBox","AUDIOFOCUS_GAIN");
                 mMediaPlayer.setVolume(0.8f, 0.8f);
                 mMediaPlayer.start();
-                mMediaPlayer.setLooping(true);
                 break;
             case AudioManager.AUDIOFOCUS_LOSS:
 
@@ -195,4 +193,21 @@ public class MediaPlayerService extends Service implements OnPreparedListener, O
                 break;
         }
     }
+
+    private void startPlay () {
+
+        Log.v("SuperMusicBox","startPlay 1");
+
+        Uri uri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.butterflies);
+
+        try {
+
+            mMediaPlayer.setDataSource(this,uri);
+            mMediaPlayer.prepareAsync();
+        }catch (Exception e) {
+
+            Toast.makeText(MediaPlayerService.this,"Music files are wrong!",Toast.LENGTH_LONG).show();
+        }
+
+    };
 }
